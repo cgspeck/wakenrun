@@ -11,3 +11,4 @@ clap = { version = "4.5.0", features = ["derive", "env"] }
 clap_complete = "4.5.0"
 serde = { version = "1.0.196", features = ["derive"] }
 serde_yaml = "0.9.31"
+wol-rs = "1.0.1"

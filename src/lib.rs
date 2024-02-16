@@ -26,7 +26,7 @@ fn default_wakeup_validate_ping() -> bool {
     true
 }
 
-fn default_wakeup_validate_ssh_port() -> bool {
+fn default_wakeup_validate_ssh_connection() -> bool {
     true
 }
 
@@ -39,8 +39,8 @@ pub struct WakeupInstructions {
     pub boot_timeout_secs: u16,
     #[serde(default = "default_wakeup_validate_ping")]
     pub validate_ping: bool,
-    #[serde(default = "default_wakeup_validate_ssh_port")]
-    pub validate_ssh_port: bool,
+    #[serde(default = "default_wakeup_validate_ssh_connection")]
+    pub validate_ssh_connection: bool,
 }
 
 fn default_after_shutdown_remote() -> bool {
