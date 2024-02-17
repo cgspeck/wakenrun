@@ -45,8 +45,6 @@ pub struct WakeupInstructions {
     pub validate_ping: bool,
     #[serde(default = "default_wakeup_validate_ssh_connection")]
     pub validate_ssh_connection: bool,
-    #[serde(default = "default_ping_cmd")]
-    pub ping_cmd: String,
 }
 
 fn default_after_shutdown_remote() -> bool {
@@ -54,7 +52,7 @@ fn default_after_shutdown_remote() -> bool {
 }
 
 fn default_after_shutdown_cmd() -> String {
-    String::from("/usr/bin/shutdown")
+    String::from("sudo /usr/bin/shutdown now")
 }
 
 fn default_after_validate_shutdown() -> bool {
@@ -66,7 +64,7 @@ fn default_after_shutdown_timeout_secs() -> u64 {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct AfterInstructions {
+pub struct ShutdownInstructions {
     #[serde(default = "default_after_shutdown_remote")]
     pub shutdown_remote: bool,
     #[serde(default = "default_after_shutdown_cmd")]
@@ -95,5 +93,7 @@ pub struct Task {
     pub ssh: SshInstructions,
     pub wakeup_instructions: WakeupInstructions,
     pub instructions: Vec<ProcessInstruction>,
-    pub after_instructions: AfterInstructions,
+    pub shutdown_instructions: ShutdownInstructions,
+    #[serde(default = "default_ping_cmd")]
+    pub ping_cmd: String,
 }
