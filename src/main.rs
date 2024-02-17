@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use dirs::home_dir;
-use std::{ffi::OsStr, fs, path::PathBuf, str::FromStr, time::Instant};
+use log::{error, info};
+use std::{ffi::OsStr, fs, path::PathBuf, process::ExitStatus, str::FromStr, time::Instant};
 use subprocess::{Exec, Redirection};
 use wol::{send_wol, MacAddr};
 
@@ -16,6 +17,7 @@ struct Cli {
 
 pub struct CmdResult {
     pub success: bool,
+    pub std_err: String,
     pub std_out: String,
 }
 
@@ -24,26 +26,63 @@ pub fn run_cmd(
     args: &[impl AsRef<OsStr>],
     dir: Option<&PathBuf>,
     must_succeed: bool,
+    tee: bool,
 ) -> Result<CmdResult> {
     let dir_ = match dir.as_ref() {
         Some(i) => i.as_os_str().to_owned(),
         None => home_dir().unwrap().into_os_string(),
     };
 
-    // TODO: want to add option to tee the output so you can see live what it is doing
-    let out = Exec::cmd(command)
+    let mut p = Exec::cmd(command)
         .cwd(dir_)
         .args(args)
         .stdout(Redirection::Pipe)
-        .capture()?;
-    let success = out.success();
+        .popen()?;
+
+    let mut std_out = String::new();
+    let mut std_err = String::new();
+
+    loop {
+        let r = p.communicate(None);
+        let m = r.unwrap();
+        match m.0 {
+            Some(v) => {
+                if v.len() > 0 {
+                    std_out += &v;
+                    if tee {
+                        info!("{}", v)
+                    }
+                }
+            }
+            None => (),
+        }
+
+        match m.1 {
+            Some(v) => {
+                if v.len() > 0 {
+                    std_err += &v;
+                    if tee {
+                        error!("{}", v)
+                    }
+                }
+            }
+            None => (),
+        }
+        p.poll();
+        if p.exit_status().is_some() {
+            break;
+        }
+    }
+
+    let success = p.exit_status().unwrap().success();
     if must_succeed {
         assert!(success);
     }
 
     return Ok(CmdResult {
         success,
-        std_out: out.stdout_str().trim().into(),
+        std_out: std_out,
+        std_err: std_err,
     });
 }
 
@@ -53,13 +92,13 @@ fn wakeup(host: &String, i: WakeupInstructions, s: SshInstructions) -> Result<()
     }
 
     let mac_addr: MacAddr = MacAddr::from_str(&i.mac).unwrap();
-    log::info!("Sending magic packet to {}", mac_addr);
+    info!("Sending magic packet to {}", mac_addr);
     send_wol(mac_addr, None, None)?;
 
     let now = Instant::now();
 
     if i.validate_ping {
-        log::info!("Waiting for host to respond to pings...");
+        info!("Waiting for host to respond to pings...");
         let args: Vec<String> = vec![
             format!("{}", host),
             String::from("-W"),
@@ -70,7 +109,7 @@ fn wakeup(host: &String, i: WakeupInstructions, s: SshInstructions) -> Result<()
         let mut passed = false;
 
         while now.elapsed().as_secs() < i.boot_timeout_secs {
-            let r = run_cmd(i.ping_cmd.as_str(), &args, None, false)?;
+            let r = run_cmd(i.ping_cmd.as_str(), &args, None, false, true)?;
 
             if r.success {
                 passed = true;
@@ -107,7 +146,7 @@ fn wakeup(host: &String, i: WakeupInstructions, s: SshInstructions) -> Result<()
 
         let mut passed = false;
         while now.elapsed().as_secs() < i.boot_timeout_secs {
-            let r = run_cmd(s.ssh_cmd.as_str(), &args, None, false)?;
+            let r = run_cmd(s.ssh_cmd.as_str(), &args, None, false, true)?;
 
             if r.success {
                 log::info!("Remote whoami output: {}", r.std_out);
