@@ -9,6 +9,10 @@ edition = "2021"
 anyhow = "1.0.79"
 clap = { version = "4.5.0", features = ["derive", "env"] }
 clap_complete = "4.5.0"
+dirs = "5.0.1"
+log = { version = "0.4.20", features = ["serde"] }
 serde = { version = "1.0.196", features = ["derive"] }
 serde_yaml = "0.9.31"
+simple_logger = "4.3.3"
+subprocess = "0.2.9"
 wol-rs = "1.0.1"

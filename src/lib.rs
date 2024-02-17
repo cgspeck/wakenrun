@@ -14,7 +14,7 @@ pub struct SshInstructions {
     pub ssh_user: Option<String>,
 }
 
-fn default_wakeup_boot_timeout_secs() -> u16 {
+fn default_wakeup_boot_timeout_secs() -> u64 {
     120
 }
 
@@ -30,17 +30,23 @@ fn default_wakeup_validate_ssh_connection() -> bool {
     true
 }
 
+fn default_ping_cmd() -> String {
+    String::from("/usr/bin/ping")
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct WakeupInstructions {
     #[serde(default = "default_wakeup_enabled")]
     pub enabled: bool,
     pub mac: String,
     #[serde(default = "default_wakeup_boot_timeout_secs")]
-    pub boot_timeout_secs: u16,
+    pub boot_timeout_secs: u64,
     #[serde(default = "default_wakeup_validate_ping")]
     pub validate_ping: bool,
     #[serde(default = "default_wakeup_validate_ssh_connection")]
     pub validate_ssh_connection: bool,
+    #[serde(default = "default_ping_cmd")]
+    pub ping_cmd: String,
 }
 
 fn default_after_shutdown_remote() -> bool {
@@ -55,7 +61,7 @@ fn default_after_validate_shutdown() -> bool {
     true
 }
 
-fn default_after_shutdown_timeout_secs() -> u16 {
+fn default_after_shutdown_timeout_secs() -> u64 {
     120
 }
 
@@ -68,7 +74,7 @@ pub struct AfterInstructions {
     #[serde(default = "default_after_validate_shutdown")]
     pub validate_shutdown: bool,
     #[serde(default = "default_after_shutdown_timeout_secs")]
-    pub shutdown_timeout_secs: u16,
+    pub shutdown_timeout_secs: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, ValueEnum)]
