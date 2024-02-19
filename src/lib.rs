@@ -63,6 +63,10 @@ fn default_after_shutdown_timeout_secs() -> u64 {
     120
 }
 
+fn default_ping_sleep_millis() -> u64 {
+    500
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct ShutdownInstructions {
     #[serde(default = "default_after_shutdown_remote")]
@@ -96,4 +100,6 @@ pub struct Task {
     pub shutdown_instructions: ShutdownInstructions,
     #[serde(default = "default_ping_cmd")]
     pub ping_cmd: String,
+    #[serde(default = "default_ping_sleep_millis")]
+    pub ping_sleep_millis: u64,
 }
