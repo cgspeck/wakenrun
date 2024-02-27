@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use clap::Parser;
+use clap::{Parser};
 use dirs::home_dir;
 use log::{error, info};
 use std::{
@@ -31,7 +31,7 @@ pub struct CmdResult {
 
 pub fn run_cmd(
     command: impl AsRef<OsStr> + std::fmt::Display,
-    args: &[impl AsRef<OsStr> + std::fmt::Debug],
+    args: &[impl AsRef<OsStr> + std::fmt::Display],
     dir: Option<&PathBuf>,
     must_succeed: bool,
     tee: bool,
@@ -41,14 +41,27 @@ pub fn run_cmd(
         None => home_dir().unwrap().into_os_string(),
     };
 
+    let mut command_ = command.to_string();
+    let mut args_: Vec<String> = args.into_iter().map(|e| e.to_string()).collect();
+
+    if command.to_string().split(" ").count() > 1 {
+        for (i, w) in command.to_string().split(" ").enumerate() {
+            if i == 0 {
+                command_ = w.to_string()
+            } else {
+                args_.insert(i - 1, w.to_string())
+            }
+        }
+    }
+
     if tee {
         let mut display_str = String::new();
         display_str += format!("{:#?}", dir_)
             .strip_prefix('"')
             .and_then(|x| x.strip_suffix('"'))
             .expect(format!("Unable to parse dir_: {:#?}", dir_).as_str());
-        display_str += format!("$ {}", command).as_str();
-        for a in args {
+        display_str += format!("$ {}", command_).as_str();
+        for a in args_.clone() {
             display_str += " ";
             display_str += format!("{:?}", a)
                 .strip_prefix('"')
@@ -59,9 +72,9 @@ pub fn run_cmd(
         info!("Running: {}", display_str);
     }
 
-    let mut p = Exec::cmd(command)
+    let mut p = Exec::cmd(command_)
         .cwd(dir_)
-        .args(args)
+        .args(&args_)
         .stdout(Redirection::Pipe)
         .popen()?;
 
