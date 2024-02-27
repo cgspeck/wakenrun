@@ -2,7 +2,15 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use dirs::home_dir;
 use log::{error, info};
-use std::{ffi::OsStr, fmt::Debug, fs, path::PathBuf, str::FromStr, thread::sleep, time::{Duration, Instant}};
+use std::{
+    ffi::OsStr,
+    fmt::Debug,
+    fs,
+    path::PathBuf,
+    str::FromStr,
+    thread::sleep,
+    time::{Duration, Instant},
+};
 use subprocess::{Exec, Redirection};
 use wol::{send_wol, MacAddr};
 
@@ -35,11 +43,17 @@ pub fn run_cmd(
 
     if tee {
         let mut display_str = String::new();
-        display_str += format!("{:#?}", dir_).strip_prefix('"').and_then(|x| x.strip_suffix('"')).expect(format!("Unable to parse dir_: {:#?}", dir_).as_str());
+        display_str += format!("{:#?}", dir_)
+            .strip_prefix('"')
+            .and_then(|x| x.strip_suffix('"'))
+            .expect(format!("Unable to parse dir_: {:#?}", dir_).as_str());
         display_str += format!("$ {}", command).as_str();
         for a in args {
             display_str += " ";
-            display_str += format!("{:?}", a).strip_prefix('"').and_then(|x| x.strip_suffix('"')).expect(format!("Unable to parse arg: {:#?}", a).as_str());
+            display_str += format!("{:?}", a)
+                .strip_prefix('"')
+                .and_then(|x| x.strip_suffix('"'))
+                .expect(format!("Unable to parse arg: {:#?}", a).as_str());
         }
 
         info!("Running: {}", display_str);
@@ -98,11 +112,7 @@ pub fn run_cmd(
     });
 }
 
-fn run_remote_cmd(
-    host: &String,
-    s: SshInstructions,
-    remote_command: String,
-) -> Result<CmdResult> {
+fn run_remote_cmd(host: &String, s: SshInstructions, remote_command: String) -> Result<CmdResult> {
     let mut args: Vec<String> = vec![];
     args.push("-t".into());
 
@@ -110,7 +120,7 @@ fn run_remote_cmd(
         args.push("-i".into());
         args.push(s.ssh_identity_file.unwrap());
         args.push("-o".into());
-        args.push("IdentityOnly=yes".into());
+        args.push("IdentitiesOnly=yes".into());
     }
 
     if s.ssh_port.is_some() {
@@ -126,7 +136,13 @@ fn run_remote_cmd(
     run_cmd(s.ssh_cmd.as_str(), &args, None, true, true)
 }
 
-fn wakeup(host: &String, ping_cmd: &String, sleep_duration: &Duration, i: WakeupInstructions, s: SshInstructions) -> Result<()> {
+fn wakeup(
+    host: &String,
+    ping_cmd: &String,
+    sleep_duration: &Duration,
+    i: WakeupInstructions,
+    s: SshInstructions,
+) -> Result<()> {
     if !i.enabled {
         return Ok(());
     }
@@ -185,7 +201,13 @@ fn wakeup(host: &String, ping_cmd: &String, sleep_duration: &Duration, i: Wakeup
     Ok(())
 }
 
-fn shutdown(host: &String, ping_cmd: &String, sleep_duration: &Duration, i: ShutdownInstructions, s: SshInstructions) -> Result<()> {
+fn shutdown(
+    host: &String,
+    ping_cmd: &String,
+    sleep_duration: &Duration,
+    i: ShutdownInstructions,
+    s: SshInstructions,
+) -> Result<()> {
     if !i.shutdown_remote {
         return Ok(());
     }
@@ -235,7 +257,13 @@ fn main() -> anyhow::Result<()> {
     let t: Task = serde_yaml::from_str(&data).expect("Unable to open config file");
     print!("{:#?}", t);
     let sleep_duration = Duration::from_millis(t.ping_sleep_millis);
-    wakeup(&t.host,  &t.ping_cmd, &sleep_duration, t.wakeup_instructions, t.ssh.clone())?;
+    wakeup(
+        &t.host,
+        &t.ping_cmd,
+        &sleep_duration,
+        t.wakeup_instructions,
+        t.ssh.clone(),
+    )?;
     let no_args: Vec<String> = vec![];
 
     for i in t.instructions {
@@ -244,6 +272,12 @@ fn main() -> anyhow::Result<()> {
             wakenrun::ExecutionSide::Remote => run_remote_cmd(&t.host, t.ssh.clone(), i.command)?,
         };
     }
-    shutdown(&t.host, &t.ping_cmd, &sleep_duration, t.shutdown_instructions, t.ssh)?;
+    shutdown(
+        &t.host,
+        &t.ping_cmd,
+        &sleep_duration,
+        t.shutdown_instructions,
+        t.ssh,
+    )?;
     Ok(())
 }
