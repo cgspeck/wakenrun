@@ -1,26 +1,26 @@
 use anyhow::{anyhow, Result};
-use clap::{Parser};
+use clap::Parser;
 use dirs::home_dir;
 use log::{error, info};
 use std::{
-    ffi::OsStr,
-    fmt::Debug,
-    fs,
-    path::PathBuf,
-    str::FromStr,
-    thread::sleep,
-    time::{Duration, Instant},
+    ffi::OsStr, fs, path::PathBuf, process::exit, str::FromStr, thread::sleep, time::{Duration, Instant}
 };
 use subprocess::{Exec, Redirection};
 use wol::{send_wol, MacAddr};
 
-use wakenrun::{ShutdownInstructions, SshInstructions, Task, WakeupInstructions};
+use wakenrun::{
+    generate_sample_config, ShutdownInstructions, SshInstructions, Task, WakeupInstructions,
+};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+    /// Config file to execute
     #[arg(value_name = "FILE")]
     config: PathBuf,
+    /// Write a sample config to FILE
+    #[arg(short, long, default_value = "false")]
+    generate: bool,
 }
 
 pub struct CmdResult {
@@ -260,10 +260,16 @@ fn shutdown(
 
 fn main() -> anyhow::Result<()> {
     simple_logger::init_with_level(log::Level::Info).unwrap();
-    let config_fp = Cli::parse().config;
+    let args = Cli::parse();
+    let config_fp = args.config;
+
+    if args.generate {
+        return generate_sample_config(&config_fp);
+    }
 
     if !config_fp.exists() {
-        panic!("{:?} does not exist!", config_fp)
+        eprintln!("{:?} does not exist!", config_fp);
+        exit(1);
     }
     let data =
         fs::read_to_string(config_fp.clone()).expect(&format!("Unable to read {:?}", config_fp));
