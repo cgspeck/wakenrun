@@ -22,7 +22,7 @@ jobs:
     - name: Archive
       uses: vimtor/action-zip@v1.1
       with:
-        files: target/x86_64-unknown-linux-gnu/release/wakenrun LICENSE.txt
+        files: target/x86_64-unknown-linux-gnu/release/wakenrun LICENSE.txt README.md
         dest: wakenrun-x86_64-linux.zip
     - name: Release
       uses: softprops/action-gh-release@v1
